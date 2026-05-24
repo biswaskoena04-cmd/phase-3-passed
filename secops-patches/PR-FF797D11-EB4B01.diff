@@ -1,0 +1,39 @@
+--- vulnerable_original+++ patched_safe@@ -1,22 +1,22 @@-static void SFS_AddString(ScriptParser *parser, char *str)
++static void SFS_AddString(ScriptParser *parser, const char *str)
+ {
+-	char *new_str;
+-	if (!str) return;
+-	if (strlen(parser->string) + strlen(str) >= parser->length) {
+-		parser->length += PARSER_STEP_ALLOC;
+-		new_str = (char *)gf_malloc(sizeof(char)*parser->length);
+-		strcpy(new_str, parser->string);
+-		gf_free(parser->string);
+-		parser->string = new_str;
+-	}
+-		new_str = (char *)gf_malloc(sizeof(char)*parser->length);
+-		strcpy(new_str, parser->string);
+-		gf_free(parser->string);
+-		parser->string = new_str;
+-	}
+-	strcat(parser->string, str);
++    if (!str) return;
++    
++    size_t len = strlen(parser->string);
++    if ((len + 1 /* null terminator */) + strlen(str) >= parser->length) {
++        parser->length += PARSER_STEP_ALLOC;
++        char* new_str = (char*) gf_malloc(sizeof(char)*parser->length);
++        strncpy(new_str, parser->string, len);
++        new_str[len] = 0; // Null terminate it again
++        gf_free(parser->string);
++        parser->string = new_str;
++    }
++    strncat(parser->string, str, parser->length - len - 1); // Subtract one for the null terminator
+ }
+ 
+-static void SFS_AddInt(ScriptParser *parser, s32 val)
++static void SFS_AddInt(ScriptParser *parser, int val)
+ {
+-	char msg[500];+    char msg[500];
++    snprintf(msg, sizeof(msg), "%d", val);
++    SFS_AddString(parser, msg);
++}
